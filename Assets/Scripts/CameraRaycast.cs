@@ -7,31 +7,47 @@ public class CameraRaycast : MonoBehaviour
     [SerializeField] LayerMask raycastMask;
     [SerializeField] Transform target;
 
-    RaycastHit hit;
-
-    MeshRenderer lastHit;
+    [SerializeField] ObstacleVisualizer[] oldHits;
 
     // Update is called once per frame
     void Update()
     {
-        Physics.Linecast(transform.position, target.position, out hit, raycastMask);
+        RaycastHit[] hits;
+        hits = Physics.SphereCastAll(transform.position, .25f, transform.forward,
+            Vector3.Distance(transform.position, target.position) * .9f, raycastMask);
+        
+        //hits = Physics.RaycastAll(transform.position, transform.forward, Vector3.Distance(transform.position, target.position), raycastMask);
 
-        if(hit.transform != null && hit.transform.TryGetComponent<MeshRenderer>(out MeshRenderer mesh))
+        if (hits.Length > 0)
         {
-            if(lastHit != null)
+            ResetOldHits();
+            
+            oldHits = new ObstacleVisualizer[hits.Length];
+            
+            for (int i = 0; i < hits.Length; i++)
             {
-                lastHit.enabled = lastHit != mesh;
+                RaycastHit hit = hits[i];
+                oldHits[i] = hit.transform.GetComponent<ObstacleVisualizer>();
 
-                if (lastHit != mesh) lastHit = mesh;
-            }
-            else
-            {
-                lastHit = mesh;
+                if (oldHits[i]) oldHits[i].SetVisibility(false);
             }
         }
         else
         {
-            if (lastHit != null) lastHit.enabled = true;
+            ResetOldHits();
+        }
+    }
+
+    private void ResetOldHits()
+    {
+        if (oldHits != null && oldHits.Length > 0)
+        {
+            foreach (var obsVi in oldHits)
+            {
+                obsVi.SetVisibility(true);
+            }
+
+            oldHits = null;
         }
     }
 }
